@@ -1,4 +1,4 @@
-name: Windows RDP Setup 1
+name: Windows RDP Setup
 
 on:
   workflow_dispatch:
@@ -17,5 +17,5 @@ jobs:
       
     - name: Display Server IP Address
       run: |
-        $ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.Address -match "^10\." }).IPAddress
+        $ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.InterfaceAlias -eq "Ethernet" -and $_.IPAddress -match "^\d+\.\d+\.\d+\.\d+$" }).IPAddress
         Write-Host "Connect to this IP Address using RDP: $ip"
