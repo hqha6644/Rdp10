@@ -14,4 +14,8 @@ jobs:
         net localgroup administrators runneradmin /add
         Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
         Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-        Write-Host "RDP is now enabled."
+        
+    - name: Show Server IP Address
+      run: |
+        $ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.Address -match "^10\." }).IPAddress
+        Write-Host "Connect to this IP Address using RDP: $ip"
