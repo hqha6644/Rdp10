@@ -1,0 +1,21 @@
+name: Windows RDP Setup 1
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Create User and Enable RDP
+      run: |
+        net user gouravadmin Password123! /add
+        net localgroup administrators gouravadmin /add
+        Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+      
+    - name: Display Server IP Address
+      run: |
+        $ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.Address -match "^10\." }).IPAddress
+        Write-Host "Connect to this IP Address using RDP: $ip"
