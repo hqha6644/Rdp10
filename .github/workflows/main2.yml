@@ -1,21 +1,31 @@
-name: Windows RDP Setup
+name: Windows RDP 3
 
-on:
-  workflow_dispatch:
+on: [push]
 
 jobs:
-  build:
+  rdp:
     runs-on: windows-latest
-
     steps:
-    - name: Create User and Enable RDP
+    - name: Download Ngrok
       run: |
-        net user gouravadmin Password123! /add
-        net localgroup administrators gouravadmin /add
-        Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
+        Invoke-WebRequest -Uri https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
+        Expand-Archive ngrok.zip
+        move ngrok.exe C:\ngrok.exe
+
+    - name: Setup Ngrok
+      run: C:\ngrok.exe authtoken 2tuJBYHUyucigHIPbwtqvmi91BP_27kpLu9hfXn3YNvyCy9J9
+
+    - name: Enable RDP Access
+      run: |
+        net user gouravadmin1 yourpassword123 /add
+        net localgroup administrators gouravadmin1 /add
+        reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
         Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-      
-    - name: Display Server IP Address
+
+    - name: Start Ngrok Tunnel
+      run: Start-Process powershell -ArgumentList "C:\ngrok.exe tcp 3389"
+
+    - name: Display RDP Address
       run: |
-        $ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.InterfaceAlias -eq "Ethernet" -and $_.IPAddress -match "^\d+\.\d+\.\d+\.\d+$" }).IPAddress
-        Write-Host "Connect to this IP Address using RDP: $ip"
+        Start-Sleep -Seconds 15
+        Invoke-RestMethod -Uri http://127.0.0.1:4040/api/tunnels | Select -ExpandProperty tunnels | Select -ExpandProperty public_url
