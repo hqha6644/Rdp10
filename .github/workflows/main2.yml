@@ -6,16 +6,16 @@ jobs:
   rdp:
     runs-on: windows-latest
     steps:
-    - name: Download Ngrok
+    - name: Download and Setup Ngrok
       run: |
-        Invoke-WebRequest -Uri https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
-        Expand-Archive ngrok.zip
-        move ngrok.exe C:\ngrok.exe
+        Invoke-WebRequest -Uri https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
+        Expand-Archive .\ngrok.zip -DestinationPath .
+        Move-Item -Path .\ngrok.exe -Destination C:\ngrok.exe
 
-    - name: Setup Ngrok
+    - name: Setup Ngrok Auth Token
       run: C:\ngrok.exe authtoken 2tuJBYHUyucigHIPbwtqvmi91BP_27kpLu9hfXn3YNvyCy9J9
 
-    - name: Enable RDP Access
+    - name: Create New User and Enable RDP
       run: |
         net user gouravadmin1 yourpassword123 /add
         net localgroup administrators gouravadmin1 /add
@@ -25,7 +25,7 @@ jobs:
     - name: Start Ngrok Tunnel
       run: Start-Process powershell -ArgumentList "C:\ngrok.exe tcp 3389"
 
-    - name: Display RDP Address
+    - name: Get RDP Address
       run: |
-        Start-Sleep -Seconds 15
+        Start-Sleep -Seconds 20
         Invoke-RestMethod -Uri http://127.0.0.1:4040/api/tunnels | Select -ExpandProperty tunnels | Select -ExpandProperty public_url
