@@ -1,0 +1,31 @@
+name: Windows RDP 4
+
+on: [push]
+
+jobs:
+  rdp:
+    runs-on: windows-latest
+    steps:
+    - name: Download and Setup Ngrok
+      run: |
+        Invoke-WebRequest -Uri https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
+        Expand-Archive .\ngrok.zip -DestinationPath .
+        Move-Item -Path .\ngrok.exe -Destination C:\ngrok.exe
+
+    - name: Setup Ngrok Auth Token
+      run: C:\ngrok.exe authtoken 2tuJBYHUyucigHIPbwtqvmi91BP_27kpLu9hfXn3YNvyCy9J9
+
+    - name: Create New User and Enable RDP
+      run: |
+        net user gouravadmin1 yourpassword123 /add
+        net localgroup administrators gouravadmin1 /add
+        reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+
+    - name: Start Ngrok Tunnel
+      run: C:\ngrok.exe tcp 3389 > ngrok.log &
+
+    - name: Get RDP Address
+      run: |
+        Start-Sleep -Seconds 25
+        Invoke-RestMethod -Uri http://127.0.0.1:4040/api/tunnels | Select-Object -ExpandProperty public_url
