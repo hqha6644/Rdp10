@@ -1,0 +1,30 @@
+name: Setup Windows RDP and Ngrok
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  setup:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Set up environment
+      run: |
+        Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        Restart-Service -Name TermService -Force
+
+    - name: Setup ngrok for RDP tunnel
+      run: |
+        Invoke-WebRequest -Uri "https://bin.equinox.io/c/4VmDzA7iaJY/ngrok-stable-windows-amd64.zip" -OutFile "ngrok.zip"
+        Expand-Archive -Path ngrok.zip -DestinationPath "C:\ngrok"
+        C:\ngrok\ngrok.exe tcp 3389 --authtoken YOUR_NGROK_TOKEN > ngrok.log &
+        Start-Sleep -Seconds 10
+
+    - name: Output ngrok status
+      run: |
+        Get-Content "C:\ngrok\ngrok.log" | Select-String "tcp"
