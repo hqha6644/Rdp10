@@ -1,19 +1,30 @@
-name: Setup Windows RDP
+name: Windows RDP via Ngrok
 
-on:
-  push:
-    branches:
-      - main
+on: [workflow_dispatch]
 
 jobs:
-  setup:
+  rdp:
     runs-on: windows-latest
-    
+
     steps:
-    - name: Set up environment and enable RDP
+    - name: Enable RDP and Configure User
       run: |
+        net user gouravhaha70 hahaok70 /add
+        net localgroup administrators gouravhaha70 /add
         Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
         Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
-        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-        Restart-Service -Name TermService -Force
+
+    - name: Download and Set up Ngrok
+      run: |
+        Invoke-WebRequest -Uri "https://bin.equinox.io/c/4VmDzA7iaJY/ngrok-stable-windows-amd64.zip" -OutFile "ngrok.zip"
+        Expand-Archive ngrok.zip -DestinationPath "$env:USERPROFILE\ngrok"
+        $env:PATH += ";$env:USERPROFILE\ngrok"
+        & "$env:USERPROFILE\ngrok\ngrok.exe" authtoken 2tuJBYHUyucigHIPbwtqvmi91BP_27kpLu9hfXn3YNvyCy9J9
+        Start-Process "$env:USERPROFILE\ngrok\ngrok.exe" -ArgumentList "tcp 3389" -NoNewWindow
+
+    - name: Show Ngrok Tunnel Info
+      run: |
+        Start-Sleep -Seconds 10
+        Invoke-WebRequest -UseBasicParsing http://127.0.0.1:4040/api/tunnels | Out-File tunnel.json
+        Get-Content tunnel.json | Select-String "public_url"
